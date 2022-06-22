@@ -7,6 +7,7 @@ console.log('my first server!');
 const express = require('express');
 require('dotenv').config();
 let data = require('./data/weather.json');
+let cors = require('cors');
 
 // USE
 // Once I have required something, we have to use it.
@@ -17,6 +18,8 @@ const app = express();
 // define my PORT, validate that my dotenv file is working
 const PORT = process.env.PORT || 3002;
 // 3002 - if my server runs on 3002, I know something is wrong with my .env file or how Im importing the values from it
+
+app.use(cors());
 
 // ROUTES
 // we will use these to access our endpoints
@@ -34,7 +37,11 @@ app.get('/hello', (request, response) => {
   response.send(`hello ${name} ${lastName}!`);
 });
 
-app.get('/weather', (request, response) => {
+function round(num) {
+  return Math.ceil(num * 10) / 10;
+}
+
+app.get('/weather', (request, response, next) => {
   let latFromRequest = parseFloat(request.query.lat);
   let lonFromRequest = parseFloat(request.query.lon);
   let searchQueryFromRequest = request.query.searchQuery.toLowerCase();
@@ -47,6 +54,11 @@ app.get('/weather', (request, response) => {
     if (typeof forecastLon === 'string') {
       forecastLon = parseFloat(forecastLon);
     }
+    // round each lon and lat
+    forecastLat = round(forecastLat);
+    forecastLon = round(forecastLon);
+    latFromRequest = round(latFromRequest);
+    lonFromRequest = round(lonFromRequest);
     return (
       forecastLat === latFromRequest &&
       forecastLon === lonFromRequest &&
@@ -57,7 +69,7 @@ app.get('/weather', (request, response) => {
     dataToGroom === undefined ||
     (searchQueryFromRequest !== 'seattle' && searchQueryFromRequest !== 'paris' && searchQueryFromRequest !== 'amman')
   ) {
-    response.send('Error: incorrect city requested. Must be from the following: ["Seattle", "Paris", "Amman"]');
+    next('Error: incorrect city requested. Must be from the following: ["Seattle", "Paris", "Amman"]');
     return;
   }
   let dataToSend = new Forecast(dataToGroom);
@@ -91,6 +103,15 @@ class Forecast {
 
 // ERRORS
 // handle any errors
+function errorHandler (err, req, res, next) {
+  if (res.headersSent) {
+    return next(err);
+  }
+  res.status(500);
+  res.send(err);
+}
+
+app.use(errorHandler);
 
 // LISTEN
 // start the server
