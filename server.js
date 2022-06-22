@@ -103,6 +103,7 @@ class Forecast {
 
 // ERRORS
 // handle any errors
+// taken from documentation: https://expressjs.com/en/guide/error-handling.html
 function errorHandler (err, req, res, next) {
   if (res.headersSent) {
     return next(err);

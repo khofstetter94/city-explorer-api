@@ -1,5 +1,9 @@
 # city-explorer-api
 
+![WRRC Cycle](./img/lab06-web-request-response-cycle.jpg)
+
+![WRRC 2](./img/WRRC2.jpeg)
+
 Name of feature: Set up server
 
 Estimate of time needed to complete: 4 hours
