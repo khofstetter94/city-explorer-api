@@ -2,83 +2,33 @@
 
 console.log('my first server!');
 
-// REQUIRE
-// In our server, we have to use require instead of import. Here we will list the requirements for our server.
 const express = require('express');
 require('dotenv').config();
-let data = require('./data/weather.json');
+// let data = require('./data/weather.json');
 let cors = require('cors');
+let axios = require('axios');
 
-// USE
-// Once I have required something, we have to use it.
-// this is where we assign the required file a variable name
-// react does this in one step with import, it says we must use it and assign it to a variable
-// express takes 2 steps: require and use
+
 const app = express();
-// define my PORT, validate that my dotenv file is working
 const PORT = process.env.PORT || 3002;
-// 3002 - if my server runs on 3002, I know something is wrong with my .env file or how Im importing the values from it
 
 app.use(cors());
 
-// ROUTES
-// we will use these to access our endpoints
+app.get('/weather', async (request, response, next) => {
+  let userLat = request.query.lat;
+  let userLon = request.query.lon;
+  let userCity = request.query.city.toLowerCase();
 
-// .get() is an express method. It correlates to axios.get. The first parameter is a URL in quotes, the second is a callback function
+  let url = `http://api.weatherbit.io/v2.0/forecast/daily?key=${process.env.WEATHER_API_KEY}&units=I&days=5&lat=${userLat}&lon=${userLon}&city=${userCity}`;
+  let axiosResponse = await axios.get(url);
 
-app.get('/', (request, response) => {
-  response.send('hello from my server!');
-});
-
-app.get('/hello', (request, response) => {
-  console.log(request.query.name);
-  let name = request.query.name;
-  let lastName = request.query.lastName;
-  response.send(`hello ${name} ${lastName}!`);
-});
-
-function round(num) {
-  return Math.ceil(num * 10) / 10;
-}
-
-app.get('/weather', (request, response, next) => {
-  let latFromRequest = parseFloat(request.query.lat);
-  let lonFromRequest = parseFloat(request.query.lon);
-  let searchQueryFromRequest = request.query.searchQuery.toLowerCase();
-  let dataToGroom = data.find(forecast => {
-    let forecastLat = forecast.lat;
-    let forecastLon = forecast.lon;
-    if (typeof forecastLat === 'string') {
-      forecastLat = parseFloat(forecastLat);
-    }
-    if (typeof forecastLon === 'string') {
-      forecastLon = parseFloat(forecastLon);
-    }
-    // round each lon and lat
-    forecastLat = round(forecastLat);
-    forecastLon = round(forecastLon);
-    latFromRequest = round(latFromRequest);
-    lonFromRequest = round(lonFromRequest);
-    return (
-      forecastLat === latFromRequest &&
-      forecastLon === lonFromRequest &&
-      forecast.city_name.toLowerCase() === searchQueryFromRequest
-    );
-  });
-  if (
-    dataToGroom === undefined ||
-    (searchQueryFromRequest !== 'seattle' && searchQueryFromRequest !== 'paris' && searchQueryFromRequest !== 'amman')
-  ) {
-    next('Error: incorrect city requested. Must be from the following: ["Seattle", "Paris", "Amman"]');
+  if (axiosResponse.status !== 200) {
+    next('Error: no weather data was found');
     return;
   }
-  let dataToSend = new Forecast(dataToGroom);
-  response.send(dataToSend.forcast);
-});
 
-// catchall route - goes at the bottom of our routes
-app.get('*', (request, response) => {
-  response.send('The thing you are looking for doesn\'t exist');
+  let dataToSend = new Forecast(axiosResponse.data);
+  response.send(dataToSend.forcast);
 });
 
 // CLASSSES
@@ -101,8 +51,50 @@ class Forecast {
   }
 }
 
-// ERRORS
-// handle any errors
+//  BEGIN MOVIE API STUFF
+app.get('/movies', async (request, response, next) => {
+  let userCity = request.query.city.toLowerCase();
+
+  let url = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIE_API_KEY}&query=${userCity}`;
+  let axiosResponse = await axios.get(url);
+
+  if (axiosResponse.status !== 200) {
+    next('Error: no movies matching the city request');
+    return;
+  }
+
+  let dataToSend = new Movie(axiosResponse.data.results);
+  response.send(dataToSend.movie);
+});
+
+class Movie {
+  constructor(movieArr) {
+    this.movie = [];
+    for (let i = 0; i < movieArr.length; i++) {
+      let data = movieArr[i];
+      let dataMovie = this.formatMovie(data);
+      this.movie.push(dataMovie);
+    }
+  }
+
+  formatMovie(data) {
+    let formatted = {
+      title: data.title,
+      overview: data.overview,
+      average_votes: data.vote_average,
+      total_votes: data.vote_count,
+      popularity: data.popularity,
+      released_on: data.release_date,
+      image_url: `https://image.tmdb.org/t/p/w500${data.poster_path}`
+    };
+    return formatted;
+  }
+}
+
+app.get('*', (request, response) => {
+  response.send('The thing you are looking for doesn\'t exist');
+});
+
 // taken from documentation: https://expressjs.com/en/guide/error-handling.html
 function errorHandler (err, req, res, next) {
   if (res.headersSent) {
@@ -114,7 +106,4 @@ function errorHandler (err, req, res, next) {
 
 app.use(errorHandler);
 
-// LISTEN
-// start the server
-//  .listen() is an express method that takes in a Port value and a callback funtion
 app.listen(PORT, () => console.log(`listening on port ${PORT}`));
