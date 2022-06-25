@@ -17,8 +17,8 @@ app.get('/movies', getMovies);
 function weatherHandler(request, response) {
   const { lat, lon } = request.query;
   weather(lat, lon)
-  .then(summaries => response.send(summaries))
-  .catch((error) => {
+    .then(summaries => response.send(summaries))
+    .catch((error) => {
       console.error(error);
       response.status(200).send('Sorry. Something went wrong!');
     });
