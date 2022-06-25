@@ -1,37 +1,27 @@
 'use strict';
 
-console.log('my first server!');
-
-const express = require('express');
 require('dotenv').config();
-let cors = require('cors');
+const express = require('express');
+const cors = require('cors');
 
-//  REQUIRE MODULES
-let getWeather = require('./modules/weather.js');
+const weather = require('./modules/weather.js');
 let getMovies = require('./modules/movies.js');
 
-// USE
 const app = express();
 const PORT = process.env.PORT || 3002;
 app.use(cors());
 
-// ROUTES
-app.get('/weather', getWeather);
+app.get('/weather', weatherHandler);
 app.get('/movies', getMovies);
 
-app.get('*', (request, response) => {
-  response.send('The thing you are looking for doesn\'t exist');
-});
-
-// taken from documentation: https://expressjs.com/en/guide/error-handling.html
-function errorHandler (err, req, res, next) {
-  if (res.headersSent) {
-    return next(err);
-  }
-  res.status(500);
-  res.send(err);
+function weatherHandler(request, response) {
+  const { lat, lon } = request.query;
+  weather(lat, lon)
+    .then(summaries => response.send(summaries))
+    .catch((error) => {
+      console.error(error);
+      response.status(200).send('Sorry. Something went wrong!');
+    });
 }
 
-app.use(errorHandler);
-
-app.listen(PORT, () => console.log(`listening on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server up on ${PORT}`));
