@@ -1,20 +1,30 @@
 'use strict';
 
 let axios = require('axios');
+let cache = require('./cache.js');
 
 async function getMovies(request, response, next){
   let userCity = request.query.city.toLowerCase();
-
+  const key = 'movies- ' + userCity;
   let url = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIE_API_KEY}&query=${userCity}`;
-  let axiosResponse = await axios.get(url);
+  console.log(url);
+  if (cache[key] && (Date.now() - cache[key].timestamp < 50000)) {
+    console.log('Cache hit (movies)');
+  } else {
+    console.log('Cache miss (movies)');
+    cache[key] = {};
+    cache[key].timestamp = Date.now();
+    let axiosResponse = await axios.get(url);
 
-  if (axiosResponse.status !== 200) {
-    next('Error: no movies matching the city request');
-    return;
+    if (axiosResponse.status !== 200) {
+      next('Error: no movies matching the city request');
+      return;
+    }
+
+    let dataToSend = new Movie(axiosResponse.data.results);
+    cache[key].data = dataToSend.movie;
   }
-
-  let dataToSend = new Movie(axiosResponse.data.results);
-  response.send(dataToSend.movie);
+  response.send(cache[key].data);
 }
 
 class Movie {
