@@ -6,6 +6,8 @@
 
 ![WRRC 3](./img/WRRC3.jpg)
 
+![WRRC 4](./img/finalWRRC.jpg)
+
 Name of feature: Set up server
 
 Estimate of time needed to complete: 4 hours
@@ -33,5 +35,15 @@ Estimate of time needed to complete: 2 hours
 Start time: 2:00PM
 
 Finish time: 4:00PM
+
+Actual time needed to complete: 2 hours
+
+Name of feature: Add Cache
+
+Estimate of time needed to complete: 2 hours
+
+Start time: 4:00PM
+
+Finish time: 6:00PM
 
 Actual time needed to complete: 2 hours
